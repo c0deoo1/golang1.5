@@ -41,6 +41,7 @@ const (
 //     order = log_2(size/FixedStack)
 // There is a free list for each order.
 // TODO: one lock per order?
+// 全局的栈缓存 2k/4k/8k/16k
 var stackpool [_NumStackOrders]mspan
 var stackpoolmu mutex
 

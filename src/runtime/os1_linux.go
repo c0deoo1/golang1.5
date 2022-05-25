@@ -170,6 +170,7 @@ var failallocatestack = []byte("runtime: failed to allocate stack for the new OS
 var failthreadcreate = []byte("runtime: failed to create new OS thread\n")
 
 func osinit() {
+	// 获取CPU数量
 	ncpu = getproccount()
 }
 

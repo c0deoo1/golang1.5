@@ -642,6 +642,7 @@ var (
 
 	// Information about what cpu features are available.
 	// Set on startup in asm_{x86,amd64}.s.
+	// CPU的信息，包括一些特殊指令的支持能力
 	cpuid_ecx         uint32
 	cpuid_edx         uint32
 	lfenceBeforeRdtsc bool

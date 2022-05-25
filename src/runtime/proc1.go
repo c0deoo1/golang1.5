@@ -8,7 +8,7 @@ import "unsafe"
 
 var (
 	m0 m
-	g0 g
+	g0 g // g0和m0的一些初始化动作会在asm_amd64.s中执行
 )
 
 // Goroutine scheduler
@@ -42,24 +42,25 @@ func schedinit() {
 	// In particular, it must be done before mallocinit below calls racemapshadow.
 	_g_ := getg()
 	if raceenabled {
+		// TODO race的用法
 		_g_.racectx = raceinit()
 	}
-
+	// 最大10000个线程
 	sched.maxmcount = 10000
 
 	// Cache the framepointer experiment.  This affects stack unwinding.
 	framepointer_enabled = haveexperiment("framepointer")
 
-	tracebackinit()
-	moduledataverify()
-	stackinit()
-	mallocinit()
+	tracebackinit()  		// 获取一些runtime函数的地址
+	moduledataverify()		// 判断modeule信息是否合法
+	stackinit()             // 全局的栈缓存的初始化
+	mallocinit()			// 内存管理的初始化
 	mcommoninit(_g_.m)
 
-	goargs()
-	goenvs()
-	parsedebugvars()
-	gcinit()
+	goargs()                // 解析并复制args，供os.runtime_args调用
+	goenvs()	            // 解析并复制env，供syscall.runtime_envs调用
+	parsedebugvars()        // 解析一些GODEBUG开关，开关配置一些调试的行为
+	gcinit()				// gc的初始化
 
 	sched.lastpoll = uint64(nanotime())
 	procs := int(ncpu)
@@ -670,6 +671,7 @@ func startTheWorldWithSema() {
 }
 
 // Called to start an M.
+// 启动线程，开启调度循环
 //go:nosplit
 func mstart() {
 	_g_ := getg()
@@ -2188,6 +2190,7 @@ func malg(stacksize int32) *g {
 // Cannot split the stack because it assumes that the arguments
 // are available sequentially after &fn; they would not be
 // copied if a stack split occurred.
+// Go关键字的底层实现
 //go:nosplit
 func newproc(siz int32, fn *funcval) {
 	argp := add(unsafe.Pointer(&fn), ptrSize)
@@ -2674,6 +2677,7 @@ func procresize(nprocs int32) *p {
 	if old < 0 || old > _MaxGomaxprocs || nprocs <= 0 || nprocs > _MaxGomaxprocs {
 		throw("procresize: invalid arg")
 	}
+	// TODO trace的实现
 	if trace.enabled {
 		traceGomaxprocs(nprocs)
 	}

@@ -43,7 +43,8 @@ func tickspersecond() int64 {
 	unlock(&ticks.lock)
 	return r
 }
-
+// 提供给os包来访问  os.runtime_args
+// 提供给syscall包来访问 syscall.runtime_envs
 var envs []string
 var argslice []string
 

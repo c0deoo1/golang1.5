@@ -4,6 +4,7 @@
 
 #include "textflag.h"
 
+// 调用入口
 TEXT _rt0_amd64_linux(SB),NOSPLIT,$-8
 	LEAQ	8(SP), SI // argv
 	MOVQ	0(SP), DI // argc

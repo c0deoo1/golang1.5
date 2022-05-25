@@ -45,9 +45,11 @@ func argv_index(argv **byte, i int32) *byte {
 	return *(**byte)(add(unsafe.Pointer(argv), uintptr(i)*ptrSize))
 }
 
+// 将参数保留在变量中
 func args(c int32, v **byte) {
 	argc = c
 	argv = v
+	// 这里会解析vDSO中的时间函数，后续可以高效的获取时间信息，参考vdso_linux_amd64.go
 	sysargs(c, v)
 }
 
@@ -132,7 +134,7 @@ func testAtomic64() {
 		throw("xchg64 failed")
 	}
 }
-
+// 做一些基础的运行校对
 func check() {
 	var (
 		a     int8

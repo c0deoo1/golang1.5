@@ -9,6 +9,7 @@ import "unsafe"
 //go:linkname runtime_init runtime.init
 func runtime_init()
 
+// 链接到了用户的init函数
 //go:linkname main_init main.init
 func main_init()
 
@@ -17,7 +18,7 @@ func main_init()
 // so all cgo calls can rely on it existing. When main_init is complete,
 // it is closed, meaning cgocallbackg can reliably receive from it.
 var main_init_done chan bool
-
+// 链接到了用户定义的main.main函数
 //go:linkname main_main main.main
 func main_main()
 
@@ -25,6 +26,7 @@ func main_main()
 var runtimeInitTime int64
 
 // The main goroutine.
+// 第一个Goroutine执行的函数
 func main() {
 	g := getg()
 
@@ -36,6 +38,7 @@ func main() {
 	// Using decimal instead of binary GB and MB because
 	// they look nicer in the stack overflow failure message.
 	if ptrSize == 8 {
+		// 64 位机器上最大的栈空间位1G，32位上为256M
 		maxstacksize = 1000000000
 	} else {
 		maxstacksize = 250000000
@@ -43,7 +46,7 @@ func main() {
 
 	// Record when the world started.
 	runtimeInitTime = nanotime()
-
+	// 启动后台监控线程：定时垃圾回收以及并发任务调度相关
 	systemstack(func() {
 		newm(sysmon, nil)
 	})
@@ -59,7 +62,7 @@ func main() {
 	if g.m != &m0 {
 		throw("runtime.main not on m0")
 	}
-
+	// 执行runtime包内的所有初始化函数
 	runtime_init() // must be before defer
 
 	// Defer unlock so that runtime.Goexit during init does the unlock too.
@@ -69,7 +72,7 @@ func main() {
 			unlockOSThread()
 		}
 	}()
-
+ 	// 启动垃圾回收
 	gcenable()
 
 	main_init_done = make(chan bool)
@@ -96,7 +99,10 @@ func main() {
 		}
 		cgocall(_cgo_notify_runtime_init_done, nil)
 	}
-
+	// 执行所有用户包的init函数
+	// 所有 init 函数都在同一个 goroutine 内执行。
+	// 所有 init 函数结束后才会执行 main.main 函数。
+	// 另外init的执行顺序和依赖关系、文件名以及定义顺序有关，会被编译器赋予唯一的名称标记
 	main_init()
 	close(main_init_done)
 
@@ -108,6 +114,7 @@ func main() {
 		// has a main, but it is not executed.
 		return
 	}
+	// 执行用户的main函数
 	main_main()
 	if raceenabled {
 		racefini()

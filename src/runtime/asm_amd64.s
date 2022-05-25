@@ -11,18 +11,18 @@ TEXT runtime·rt0_go(SB),NOSPLIT,$0
 	// copy arguments forward on an even stack
 	MOVQ	DI, AX		// argc
 	MOVQ	SI, BX		// argv
-	SUBQ	$(4*8+7), SP		// 2args 2auto
+	SUBQ	$(4*8+7), SP		// 2args 2auto 这里做了对齐
 	ANDQ	$~15, SP
-	MOVQ	AX, 16(SP)
-	MOVQ	BX, 24(SP)
+	MOVQ	AX, 16(SP)          // argc
+	MOVQ	BX, 24(SP)          // argv
 	
 	// create istack out of the given (operating system) stack.
 	// _cgo_init may update stackguard.
 	MOVQ	$runtime·g0(SB), DI
-	LEAQ	(-64*1024+104)(SP), BX
+	LEAQ	(-64*1024+104)(SP), BX      // g0的堆栈大小大致为64k-104
 	MOVQ	BX, g_stackguard0(DI)
 	MOVQ	BX, g_stackguard1(DI)
-	MOVQ	BX, (g_stack+stack_lo)(DI)
+	MOVQ	BX, (g_stack+stack_lo)(DI) // 设置g0的堆栈范围
 	MOVQ	SP, (g_stack+stack_hi)(DI)
 
 	// find out information about the processor we're on
@@ -50,6 +50,7 @@ notintel:
 nocpuinfo:	
 	
 	// if there is an _cgo_init, call it.
+	// CGO相关的初始化。 TODO
 	MOVQ	_cgo_init(SB), AX
 	TESTQ	AX, AX
 	JZ	needtls
@@ -87,6 +88,7 @@ needtls:
 	MOVL	AX, 0	// abort
 ok:
 	// set the per-goroutine and per-mach "registers"
+	// tls始终指向g，建立m0和g0的对应关系
 	get_tls(BX)
 	LEAQ	runtime·g0(SB), CX
 	MOVQ	CX, g(BX)
@@ -104,11 +106,12 @@ ok:
 	MOVL	AX, 0(SP)
 	MOVQ	24(SP), AX		// copy argv
 	MOVQ	AX, 8(SP)
-	CALL	runtime·args(SB)
-	CALL	runtime·osinit(SB)
-	CALL	runtime·schedinit(SB)
+	CALL	runtime·args(SB)        //   参数初始化：保存参数，从vDSO中获取时间的高效函数
+	CALL	runtime·osinit(SB)      //   系统初始化：获取CPU的个数
+	CALL	runtime·schedinit(SB)   //   调度初始化
 
 	// create a new goroutine to start program
+	// 创建初始的G runtime·main
 	MOVQ	$runtime·mainPC(SB), AX		// entry
 	PUSHQ	AX
 	PUSHQ	$0			// arg size
@@ -117,6 +120,7 @@ ok:
 	POPQ	AX
 
 	// start this M
+	// 开启GMP循环
 	CALL	runtime·mstart(SB)
 
 	MOVL	$0xf1, 0xf1  // crash

@@ -136,6 +136,7 @@ TEXT runtime·mincore(SB),NOSPLIT,$0-28
 	RET
 
 // func now() (sec int64, nsec int32)
+// time.now的高效实现，通过vDSO来调用
 TEXT time·now(SB),NOSPLIT,$16
 	// Be careful. We're calling a function with gcc calling convention here.
 	// We're guaranteed 128 bytes on entry, and we've taken 16, and the
